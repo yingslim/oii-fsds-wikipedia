@@ -1,0 +1,13 @@
+[project]
+name = "oii-fsds-wikipedia"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.12.3",
+    "ipykernel>=6.29.5",
+    "lxml>=5.3.0",
+    "requests>=2.32.3",
+    "tqdm>=4.66.5",
+]
