@@ -18,7 +18,9 @@ def download_page_w_revisions(page_title: str, limit: int = 100):
         "dir": "desc",
         "action": "submit",
     }
-    return requests.post(base_url, data=params).text
+    response = requests.post(base_url, data=params)
+    response.raise_for_status()
+    return response.text
 
 
 def parse_mediawiki_revisions(xml_content):
@@ -37,7 +39,10 @@ def find_timestamp(revision: str) -> datetime:
 
 def _extract_attribute(text: str, attribute: str = "timestamp") -> str:
     soup = BeautifulSoup(text, "lxml-xml")
-    return soup.find(attribute).text
+    result = soup.find(attribute)
+    if result is None:
+        raise ValueError(f"Could not find attribute {attribute} in text")
+    return result.text
 
 
 def parse_timestring(timestring: str) -> datetime:
@@ -58,6 +63,7 @@ def main(page: str, limit: int, data_dir: Path):
     """
     print(f"Downloading {limit} revisions of {page} to {data_dir}")
     raw_revisions = download_page_w_revisions(page, limit=limit)
+    validate_page(page, page_xml=raw_revisions)
     print("Downloaded revisions. Parsing and saving...")
     for wiki_revision in tqdm(parse_mediawiki_revisions(raw_revisions), total=limit):
         revision_id = extract_id(wiki_revision)
@@ -69,6 +75,13 @@ def main(page: str, limit: int, data_dir: Path):
     print("Done!")
 
 
+def validate_page(page_name: str, page_xml: str) -> None:
+    try:
+        _ = _extract_attribute(page_xml, attribute="page")
+    except ValueError:
+        raise ValueError(f"Page {page_name} does not exist")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Download Wikipedia page revisions",
@@ -76,7 +89,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("page", type=str, help="Title of the Wikipedia page")
     parser.add_argument(
-        "--limit", type=int, default=10, help="Number of revisions to download",
+        "--limit",
+        type=int,
+        default=10,
+        help="Number of revisions to download",
     )
     args = parser.parse_args()
     main(page=args.page, limit=args.limit, data_dir=DATA_DIR)
