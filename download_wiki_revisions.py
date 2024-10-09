@@ -58,8 +58,10 @@ def find_yearmonth(revision: str) -> str:
 
 
 def main(page: str, limit: int, data_dir: Path):
-    """Downloads the main page (with revisions) for the given page title.
+    """
+    Downloads the main page (with revisions) for the given page title.
     Organizes the revisions into a folder structure like
+    <page_name>/<year>/<month>/<revision_id>.xml
     """
     print(f"Downloading {limit} revisions of {page} to {data_dir}")
     raw_revisions = download_page_w_revisions(page, limit=limit)
