@@ -66,13 +66,22 @@ def main(page: str, limit: int, data_dir: Path):
     validate_page(page, page_xml=raw_revisions)
     print("Downloaded revisions. Parsing and saving...")
     for wiki_revision in tqdm(parse_mediawiki_revisions(raw_revisions), total=limit):
-        revision_id = extract_id(wiki_revision)
-        year_month = find_yearmonth(wiki_revision)
-        revision_path = data_dir / page / year_month / f"{revision_id}.xml"
+        revision_path = construct_path(
+            wiki_revision=wiki_revision, page_name=page, save_dir=data_dir
+        )
         if not revision_path.exists():
             revision_path.parent.mkdir(parents=True, exist_ok=True)
         revision_path.write_text(wiki_revision)
     print("Done!")
+
+
+def construct_path(page_name: str, save_dir: Path, wiki_revision: str) -> Path:
+    revision_id = extract_id(wiki_revision)
+    timestamp = find_timestamp(wiki_revision)
+    year = str(timestamp.year)
+    month = str(timestamp.month).zfill(2)
+    revision_path = save_dir / page_name / year / month / f"{revision_id}.xml"
+    return revision_path
 
 
 def validate_page(page_name: str, page_xml: str) -> None:
