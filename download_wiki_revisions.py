@@ -74,7 +74,10 @@ def main(page: str, limit: int, data_dir: Path):
         if not revision_path.exists():
             revision_path.parent.mkdir(parents=True, exist_ok=True)
         revision_path.write_text(wiki_revision)
-    print("Done!")
+    
+    print("Done!") # You should call count_revisions() here and print the number of revisions
+                   # You should also pass an 'update' argument so that you can decide whether
+                   # to update and refresh or whether to simply count the revisions.   
 
 
 def construct_path(page_name: str, save_dir: Path, wiki_revision: str) -> Path:
