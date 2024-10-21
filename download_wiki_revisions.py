@@ -57,27 +57,38 @@ def find_yearmonth(revision: str) -> str:
     return extract_yearmonth(find_timestamp(revision))
 
 
-def main(page: str, limit: int, data_dir: Path):
+def main(page: str, update: bool, limit: int, data_dir: Path):
     """
     Downloads the main page (with revisions) for the given page title.
     Organizes the revisions into a folder structure like
     <page_name>/<year>/<month>/<revision_id>.xml
     """
-    print(f"Downloading {limit} revisions of {page} to {data_dir}")
-    raw_revisions = download_page_w_revisions(page, limit=limit)
-    validate_page(page, page_xml=raw_revisions)
-    print("Downloaded revisions. Parsing and saving...")
-    for wiki_revision in tqdm(parse_mediawiki_revisions(raw_revisions), total=limit):
-        revision_path = construct_path(
-            wiki_revision=wiki_revision, page_name=page, save_dir=data_dir
-        )
-        if not revision_path.exists():
-            revision_path.parent.mkdir(parents=True, exist_ok=True)
-        revision_path.write_text(wiki_revision)
-    
-    print("Done!") # You should call count_revisions() here and print the number of revisions
-                   # You should also pass an 'update' argument so that you can decide whether
-                   # to update and refresh or whether to simply count the revisions.   
+    if update:
+        print(f"Downloading {limit} revisions of {page} to {data_dir}")
+        raw_revisions = download_page_w_revisions(page, limit=limit)
+        validate_page(page, page_xml=raw_revisions)
+        print("Downloaded revisions. Parsing and saving...")
+        for wiki_revision in tqdm(
+            parse_mediawiki_revisions(raw_revisions), total=limit
+        ):
+            revision_path = construct_path(
+                wiki_revision=wiki_revision, page_name=page, save_dir=data_dir
+            )
+            if not revision_path.exists():
+                revision_path.parent.mkdir(parents=True, exist_ok=True)
+            revision_path.write_text(wiki_revision, encoding="utf-8")  # add encoding
+    else:
+        count = count_revisions(data_dir=data_dir, page_name=page)
+        print(f"This is the revision count: {count}")
+    print("Done!")
+
+
+def count_revisions(data_dir: Path, page_name: str) -> int:
+    page_path = data_dir / page_name
+    if not page_path.exists():
+        print(f"No revisions found for {page_name}.")
+        return 0
+    return sum(1 for _ in page_path.rglob("*.xml"))
 
 
 def construct_path(page_name: str, save_dir: Path, wiki_revision: str) -> Path:
@@ -103,10 +114,15 @@ if __name__ == "__main__":
     )
     parser.add_argument("page", type=str, help="Title of the Wikipedia page")
     parser.add_argument(
+        "--update",
+        action="store_true",  # run python download_wiki_revisions.py 'taylor swift' --limit 10 without --update
+        help="Whether to update the revisions",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=10,
         help="Number of revisions to download",
     )
     args = parser.parse_args()
-    main(page=args.page, limit=args.limit, data_dir=DATA_DIR)
+    main(page=args.page, update=args.update, limit=args.limit, data_dir=DATA_DIR)
